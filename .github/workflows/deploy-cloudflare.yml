@@ -12,9 +12,8 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      CLOUDFLARE_D1_DATABASE_ID: ${{ vars.CLOUDFLARE_D1_DATABASE_ID }}
-      CLOUDFLARE_D1_DATABASE_NAME: ${{ vars.CLOUDFLARE_D1_DATABASE_NAME }}
-      CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
+      CLOUDFLARE_D1_DATABASE_NAME: ${{ vars.CLOUDFLARE_D1_DATABASE_NAME || 'kaestli-variantenvergleich' }}
+      CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME || 'kaestli-variantenvergleich' }}
       ADMIN_EMAILS: ${{ vars.ADMIN_EMAILS }}
       CLOUDFLARE_ACCESS_AUD: ${{ vars.CLOUDFLARE_ACCESS_AUD }}
       CLOUDFLARE_ACCESS_ISSUER: ${{ vars.CLOUDFLARE_ACCESS_ISSUER }}
@@ -30,6 +29,39 @@ jobs:
       - run: npm run install:ci
       - run: npm run lint
       - run: npm test
+
+      - name: D1-Datenbank bereitstellen
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          resolve_database_id() {
+            local databases
+            databases="$(npx wrangler d1 list --json)"
+            DATABASES_JSON="${databases}" node --input-type=module -e '
+              const databases = JSON.parse(process.env.DATABASES_JSON ?? "[]");
+              const database = databases.find(
+                (entry) => entry.name === process.env.CLOUDFLARE_D1_DATABASE_NAME,
+              );
+              process.stdout.write(database?.uuid ?? database?.id ?? "");
+            '
+          }
+
+          database_id="$(resolve_database_id)"
+          if [[ -z "${database_id}" ]]; then
+            npx wrangler d1 create \
+              "${CLOUDFLARE_D1_DATABASE_NAME}" \
+              --location weur
+            database_id="$(resolve_database_id)"
+          fi
+
+          if [[ -z "${database_id}" ]]; then
+            echo "D1-Datenbank konnte nicht aufgelöst werden." >&2
+            exit 1
+          fi
+
+          echo "CLOUDFLARE_D1_DATABASE_ID=${database_id}" >> "${GITHUB_ENV}"
+
       - run: npm run deploy:config
 
       - run: >

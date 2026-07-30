@@ -37,16 +37,17 @@ separater Cloudflare Worker mit eigener D1-Datenbank vorgesehen. Das bestehende
 Nachhaltigkeitsdashboard wird weder als Quellziel noch als Laufzeitressource
 verwendet.
 
-1. In Cloudflare eine D1-Datenbank anlegen, beispielsweise
-   `kaestli-variantenvergleich`.
-2. Im GitHub-Repository unter **Settings → Secrets and variables → Actions**
+1. Im GitHub-Repository unter **Settings → Secrets and variables → Actions**
    folgende Repository-Secrets hinterlegen:
    - `CLOUDFLARE_API_TOKEN`
    - `CLOUDFLARE_ACCOUNT_ID`
-3. Folgende Repository-Variablen hinterlegen:
-   - `CLOUDFLARE_D1_DATABASE_ID`
-   - `CLOUDFLARE_D1_DATABASE_NAME`
-   - `CLOUDFLARE_WORKER_NAME` (empfohlen:
+2. Für den API-Token werden Rechte zum Veröffentlichen von Workers und zum
+   Schreiben von D1-Datenbanken benötigt. Token und Konto-ID gehören
+   ausschliesslich in GitHub Secrets, nie in den Quellcode.
+3. Folgende Repository-Variablen können hinterlegt werden:
+   - `CLOUDFLARE_D1_DATABASE_NAME` (Standard:
+     `kaestli-variantenvergleich`)
+   - `CLOUDFLARE_WORKER_NAME` (Standard:
      `kaestli-variantenvergleich`)
    - `ADMIN_EMAILS` (kommagetrennte freigegebene E-Mail-Adressen)
    - `CLOUDFLARE_ACCESS_ISSUER`
@@ -55,9 +56,10 @@ verwendet.
    Subdomain erstellen und nur die Pfade `/admin*` und `/api/admin*` schützen.
 5. Unter **Actions → Cloudflare veröffentlichen** den Workflow manuell starten.
 
-Der Workflow prüft den Quellcode, führt D1-Migrationen aus und veröffentlicht
-den eigenständigen Worker. `workers_dev` bleibt aktiv, damit der Rechner auch
-ohne eigene Domain öffentlich erreichbar ist. Für den geschützten Adminbereich
-ist eine über Cloudflare verwaltete Domain oder Subdomain erforderlich. Solange
+Der Workflow legt die eigene D1-Datenbank bei Bedarf automatisch in Westeuropa
+an, prüft den Quellcode, führt D1-Migrationen aus und veröffentlicht den
+eigenständigen Worker. `workers_dev` bleibt aktiv, damit der Rechner auch ohne
+eigene Domain öffentlich erreichbar ist. Für den geschützten Adminbereich ist
+eine über Cloudflare verwaltete Domain oder Subdomain erforderlich. Solange
 Cloudflare Access nicht vollständig konfiguriert ist, bleibt der Rechner
 öffentlich nutzbar, während der Adminbereich keine Schreibzugriffe akzeptiert.
